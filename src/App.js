@@ -3,9 +3,6 @@ import LoginPage from './pages/Login';
 import UserDashboard from './pages/userDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 
-
-
-
 function App() {
   return (
     <Router>
