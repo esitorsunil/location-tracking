@@ -1,25 +1,52 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { doc, setDoc, updateDoc, getDoc, arrayUnion } from 'firebase/firestore';
+import { db } from './firebase';
 
 const initialState = {
-  logs: JSON.parse(localStorage.getItem('timesheetLogs')) || {},
+  logs: {}, // Redux state (optional, not required if only using Firestore)
 };
 
 const timesheetSlice = createSlice({
   name: 'timesheet',
   initialState,
   reducers: {
-    logActivity: (state, action) => {
-      const { adminEmail, userEmail, name, event } = action.payload;
+   logActivity: (state, action) => {
+  const { adminEmail, userEmail, name, event } = action.payload;
 
-      if (!state.logs[adminEmail]) state.logs[adminEmail] = {};
-      if (!state.logs[adminEmail][userEmail]) {
-        state.logs[adminEmail][userEmail] = { name, events: [] };
-      }
+  // ❗ Validate required fields before proceeding
+  if (
+    !adminEmail || !userEmail || !name ||
+    !event || !event.type || !event.time ||
+    !event.timestamp || !event.location
+  ) {
+    console.error("❌ Missing or invalid data in logActivity:", action.payload);
+    return; // ⛔ Prevent Firestore write
+  }
 
-      state.logs[adminEmail][userEmail].events.push(event);
+  const userDocRef = doc(db, 'timesheets', adminEmail);
 
-      localStorage.setItem('timesheetLogs', JSON.stringify(state.logs));
-    },
+  getDoc(userDocRef).then((docSnap) => {
+    if (docSnap.exists()) {
+      updateDoc(userDocRef, {
+        [`users.${userEmail}.name`]: name,
+        [`users.${userEmail}.events`]: arrayUnion(event),
+      });
+    } else {
+      setDoc(userDocRef, {
+        users: {
+          [userEmail]: {
+            name,
+            events: [event],
+          },
+        },
+      });
+    }
+  }).catch((error) => {
+    console.error("❌ Firestore logActivity error:", error);
+  });
+}
+
+
   },
 });
 

@@ -16,8 +16,10 @@ export default function LoginPage() {
     );
 
     if (foundUser) {
-      localStorage.setItem('loggedInUser', JSON.stringify(foundUser));
- 
+      // ✅ Save user in sessionStorage for app-wide use
+      sessionStorage.setItem('loggedInUser', JSON.stringify(foundUser));
+
+      // Navigate to role-specific dashboard
       if (foundUser.role === 'admin') {
         navigate('/admin');
       } else {

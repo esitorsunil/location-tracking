@@ -8,11 +8,9 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 export default function HeaderBar({
   position,
-  address,
   isCheckedIn,
   setIsCheckedIn,
   setCheckInTime,
-  setAddress,
   setDistanceFromTarget,
   setShowDialog,
   setShowLogoutWarning,
@@ -25,9 +23,10 @@ export default function HeaderBar({
     if (!position) return toast.error("Unable to get your location!");
 
     const distance = getDistance(position, [targetLocation.lat, targetLocation.lng]);
+    setDistanceFromTarget(distance);
 
     if (!isCheckedIn) {
-      if (distance <= 800) {
+      if (distance <= 3800) {
         const now = new Date();
         const checkInTime = now.toLocaleTimeString();
 
@@ -45,7 +44,6 @@ export default function HeaderBar({
               time: checkInTime,
               timestamp: now.toISOString(),
               location: position,
-              address,
             },
           })
         );
@@ -58,7 +56,6 @@ export default function HeaderBar({
 
       setIsCheckedIn(false);
       setCheckInTime('');
-      setAddress('');
       setDistanceFromTarget(null);
       setShowDialog(false);
       toast.info("Checked Out Successfully");
@@ -73,7 +70,6 @@ export default function HeaderBar({
             time: checkOutTime,
             timestamp: now.toISOString(),
             location: position,
-            address,
           },
         })
       );
