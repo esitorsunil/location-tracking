@@ -1,96 +1,101 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import LiveMap from '../components/LiveMap';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../utils/firebase';
+import UserMap from '../components/UserMap';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
-  const [mapLocation, setMapLocation] = useState(null);
-  const [mapAddress, setMapAddress] = useState('');
-  const [showMapModal, setShowMapModal] = useState(false);
-
-  const currentAdmin = JSON.parse(localStorage.getItem('loggedInUser'));
-  const adminEmail = currentAdmin?.admin || currentAdmin?.email;
+  const [userData, setUserData] = useState({});
+  const admin = JSON.parse(localStorage.getItem('loggedInUser'));
+  const adminEmail = admin?.email || 'user@gmail.com';
 
   useEffect(() => {
-    if (!currentAdmin || currentAdmin.role !== 'admin') {
-      navigate('/');
-    }
-  }, []);
+    const fetchData = async () => {
+      try {
+        const docRef = doc(db, 'timesheets', adminEmail);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const usersData = docSnap.data().users || {};
+          console.log("🔥 Firestore users JSON data:", JSON.stringify(usersData, null, 2));
+          setUserData(usersData);
+        }
+      } catch (err) {
+        console.error("🔥 Failed to fetch admin data:", err);
+      }
+    };
 
-  const userRecords = useSelector(state => state.timesheet.logs[adminEmail] || {});
+    fetchData();
+  }, [adminEmail]);
 
   const handleLogout = () => {
-    localStorage.removeItem('loggedInUser');
-    navigate('/');
-  };
-
-  const openMap = (location, address) => {
-    setMapLocation(location);
-    setMapAddress(address);
-    setShowMapModal(true);
+    sessionStorage.removeItem('loggedInUser');
+    window.location.href = '/';
   };
 
   return (
-    <div className="container mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3>👨‍💼 Admin Dashboard</h3>
-        <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
-      </div>
+    <div className="container-fluid bg-light min-vh-100">
+      {/* Header */}
+      <header className="bg-dark text-white d-flex justify-content-between align-items-center px-4 py-3">
+        <h4 className="mb-0">Welcome Admin</h4>
+        <button className="btn btn-danger" onClick={handleLogout}>
+          <i className="bi bi-box-arrow-right me-2"></i>Logout
+        </button>
+      </header>
 
-      <div className="table-responsive">
-        <table className="table table-striped table-bordered align-middle">
-          <thead className="table-dark">
-            <tr>
-              <th>User</th>
-              <th>Action</th>
-              <th>Time</th>
-              <th>Address</th>
-              <th>View on Map</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(userRecords).map(([email, { name, events }]) =>
-              events.map((event, index) => (
-                <tr key={`${email}-${index}`}>
-                  <td>{name}</td>
-                  <td>{event.type === 'check-in' ? '🟢 Check-In' : '🔴 Check-Out'}</td>
-                  <td>{event.time}</td>
-                  <td>{event.address || 'Unknown'}</td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => openMap(event.location, event.address)}
-                    >
-                      View Map
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Body */}
+      <div className="container-fluid py-4">
+        {Object.entries(userData).map(([email, { name, sessions }]) => {
+          const sessionRows = Object.entries(sessions || {}).map(([date, sessionData]) => {
+            const checkIn = sessionData.checkIn?.checkIn;
+            const checkOut = sessionData.checkOut?.checkOut;
 
-      {showMapModal && (
-        <div className="modal fade show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">📍 Location</h5>
-                <button className="btn-close" onClick={() => setShowMapModal(false)}></button>
+            return {
+              date,
+              name,
+              checkInTime: checkIn?.time || '—',
+              checkOutTime: checkOut?.time || '—',
+              location: checkIn?.location || checkOut?.location || null,
+            };
+          });
+
+          const lastLocation = sessionRows.at(-1)?.location;
+
+          return (
+            <div key={email} className="row mb-5">
+              <div className="col-md-7">
+                <table className="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Date</th>
+                      <th>Check-In Time</th>
+                      <th>Check-Out Time</th>
+                      <th>Location</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sessionRows.map((row, i) => (
+                      <tr key={i}>
+                        <td>{row.name}</td>
+                        <td>{row.date}</td>
+                        <td>{row.checkInTime}</td>
+                        <td>{row.checkOutTime}</td>
+                        <td>
+                          {row.location?.[0] ?? '--'}, {row.location?.[1] ?? '--'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="modal-body">
-                <LiveMap position={mapLocation} />
-                <p className="mt-3 text-muted">📌 {mapAddress}</p>
-              </div>
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setShowMapModal(false)}>Close</button>
+
+              <div className="col-md-5">
+                <UserMap position={lastLocation} />
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -16,7 +16,7 @@ export default function HeaderBar({
   setShowLogoutWarning,
 }) {
   const dispatch = useDispatch();
-  const user = JSON.parse(localStorage.getItem('loggedInUser'));
+  const user = JSON.parse(sessionStorage.getItem('loggedInUser'));
   const adminEmail = user?.admin || user?.email;
 
   const handleCheckInOut = () => {
@@ -25,13 +25,16 @@ export default function HeaderBar({
     const distance = getDistance(position, [targetLocation.lat, targetLocation.lng]);
     setDistanceFromTarget(distance);
 
+    const now = new Date();
+    const time = now.toLocaleTimeString();
+    const timestamp = now.toISOString();
+
+    const sessionKey = now.toISOString().split('T')[0]; // YYYY-MM-DD key for session
+
     if (!isCheckedIn) {
       if (distance <= 3800) {
-        const now = new Date();
-        const checkInTime = now.toLocaleTimeString();
-
         setIsCheckedIn(true);
-        setCheckInTime(checkInTime);
+        setCheckInTime(time);
         toast.success("Checked In Successfully");
 
         dispatch(
@@ -39,11 +42,10 @@ export default function HeaderBar({
             adminEmail,
             userEmail: user.email,
             name: user.name,
-            event: {
-              type: 'check-in',
-              time: checkInTime,
-              timestamp: now.toISOString(),
-              location: position,
+            sessionKey,
+            type: 'check-in',
+            data: {
+              checkIn: { time, timestamp, location: position },
             },
           })
         );
@@ -51,9 +53,6 @@ export default function HeaderBar({
         toast.warning("You are not within 700 meters of the office.");
       }
     } else {
-      const now = new Date();
-      const checkOutTime = now.toLocaleTimeString();
-
       setIsCheckedIn(false);
       setCheckInTime('');
       setDistanceFromTarget(null);
@@ -65,11 +64,10 @@ export default function HeaderBar({
           adminEmail,
           userEmail: user.email,
           name: user.name,
-          event: {
-            type: 'check-out',
-            time: checkOutTime,
-            timestamp: now.toISOString(),
-            location: position,
+          sessionKey,
+          type: 'check-out',
+          data: {
+            checkOut: { time, timestamp, location: position },
           },
         })
       );
