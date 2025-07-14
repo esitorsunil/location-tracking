@@ -41,7 +41,6 @@ const timesheetSlice = createSlice({
           },
         };
 
-        // 🔄 Update or set user data
         updateDoc(userDocRef, {
           [`users.${userEmail}`]: updatedUser,
         }).catch(() => {
