@@ -94,8 +94,6 @@ export default function UserDashboard() {
     </div>
   </div>
 )}
-
-
         {showDialog && (
           <AddressInfoModal
             address={address}

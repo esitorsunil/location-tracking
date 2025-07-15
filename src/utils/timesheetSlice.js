@@ -14,11 +14,10 @@ const timesheetSlice = createSlice({
       let { adminEmail, userEmail, name, sessionKey, type, data } = action.payload;
 
       if (!adminEmail || !userEmail || !name || !sessionKey || !type || !data) {
-        console.error("❌ Missing data in logActivity:", action.payload);
+        console.error(" Missing data in logActivity:", action.payload);
         return;
       }
 
-      // 🔐 Sanitize emails
       adminEmail = adminEmail.trim().toLowerCase();
       userEmail = sanitizeEmail(userEmail.trim().toLowerCase());
 
@@ -29,7 +28,6 @@ const timesheetSlice = createSlice({
         const existingUser = existingData.users?.[userEmail] || { name, sessions: {} };
         const existingSessions = existingUser.sessions || {};
 
-        // ⏱ Merge session data
         const session = existingSessions[sessionKey] || {};
         session[type === 'check-in' ? 'checkIn' : 'checkOut'] = data;
 

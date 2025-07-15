@@ -9,6 +9,6 @@ export const mockUsers = [
     role: "user",
     email: "user@gmail.com",
     password: "user123",
-    name: "User"
+    name: "Sunil"
   }
 ];

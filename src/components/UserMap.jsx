@@ -60,7 +60,7 @@ export default function UserMap({ positions }) {
     <Marker key={idx} position={user.position}>
       <Tooltip
         direction="top"
-        offset={[0, -10]}
+        offset={[0, -2]}
         permanent
         className="leaflet-tooltip"
       >
